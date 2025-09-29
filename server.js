@@ -145,7 +145,7 @@
 
   // Configura CORS para permitir solicitudes solo desde tu frontend
   const corsOptions = {
-    origin: ['https://tinka-production.up.railway.app', 'http://localhost:5173', 'https://tinka.academionlinegpt.com','http://localhost:5000','http://localhost:8000'],
+    origin: ['https://tinka-production.up.railway.app', 'http://localhost:5173', 'https://tinka.grupo-digital-nextri.com','http://localhost:5000','http://localhost:8000'],
     methods: 'GET, POST, PUT, DELETE',
     allowedHeaders: 'Content-Type, Authorization',
   };
