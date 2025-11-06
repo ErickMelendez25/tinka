@@ -72,39 +72,30 @@ const [nuevaBola, setNuevaBola] = useState({
 
   
 
-  useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        // Llamamos a ambos endpoints en paralelo
-        const [frecRes, predRes] = await Promise.all([
-          fetch(`${API}/frecuencias`),
-          fetch(`${API}/predicciones`)
-        ]);
+ useEffect(() => {
+  const cargarDatos = async () => {
+    try {
+      const [frecRes, predRes] = await Promise.all([
+        fetch(`${API}/frecuencias`),
+        fetch(`${API}/predicciones`)
+      ]);
 
-        // Convertimos a JSON
-        const frecData = await frecRes.json();
-        const predData = await predRes.json();
+      const frecData = await frecRes.json();
+      const predData = await predRes.json();
 
-        // Verificamos que sean arrays antes de asignar
-        if (Array.isArray(frecData)) {
-          setFrecuencias(frecData);
-        } else {
-          console.warn("⚠️ /frecuencias no devolvió un array:", frecData);
-        }
+      setFrecuencias(Array.isArray(frecData) ? frecData : []);
+      setPredicciones(Array.isArray(predData) ? predData : []);
 
-        if (Array.isArray(predData)) {
-          setPredicciones(predData);
-        } else {
-          console.warn("⚠️ /predicciones no devolvió un array:", predData);
-        }
+    } catch (err) {
+      console.error("❌ Error cargando datos:", err);
+      setFrecuencias([]);
+      setPredicciones([]);
+    }
+  };
 
-      } catch (err) {
-        console.error("❌ Error cargando datos:", err);
-      }
-    };
+  cargarDatos();
+}, []);
 
-    cargarDatos();
-  }, []);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -193,14 +184,16 @@ const ejecutarModelo = async () => {
     const data = await res.json();
 
       // Ordenar por probabilidad descendente
-    const ordenadas = data.sort((a, b) => b.probabilidad - a.probabilidad);
-    setPredicciones(data);
+    const ordenadas = Array.isArray(data)
+      ? data.sort((a, b) => (b.probabilidad || 0) - (a.probabilidad || 0))
+      : [];
+
+    setPredicciones(ordenadas);
+
   };
 
 
-  useEffect(() => {
-    obtenerPredicciones();
-  }, []);
+
 
 
   const colores = ['#6366f1', '#a855f7', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
@@ -339,22 +332,38 @@ const ejecutarModelo = async () => {
       </tr>
     </thead>
     <tbody>
-          {predicciones.map((p, i) => (
-            <tr key={i}>
-              <td>
-                {[p.bola1, p.bola2, p.bola3, p.bola4, p.bola5, p.bola6].map((n, i) =>
-                  n ? <span key={i} className="bolita">{Number(n)}</span> : null
-                )}
-              </td>
-              <td>{p.boliyapa ? <span className="bolita boliyapa">{Number(p.boliyapa)}</span> : '-'}</td>
+      {Array.isArray(predicciones) && predicciones.length > 0 ? (
+        predicciones.map((p, i) => (
+          <tr key={p.id || i}>
+            <td>
+              {[p.bola1, p.bola2, p.bola3, p.bola4, p.bola5, p.bola6]
+                .filter(n => n !== null && n !== undefined)
+                .map((n, j) => (
+                  <span key={j} className="bolita">{Number(n)}</span>
+                ))}
+            </td>
+            <td>
+              {p.boliyapa
+                ? <span className="bolita boliyapa">{Number(p.boliyapa)}</span>
+                : '-'}
+            </td>
+            <td>
+              {typeof p.probabilidad === 'number'
+                ? `${(p.probabilidad * 100).toFixed(1)}%`
+                : '—'}
+            </td>
+            <td>{p.modelo_version || 'Desconocido'}</td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan="4" style={{ textAlign: 'center', color: '#666' }}>
+            ⚠️ No hay predicciones disponibles.
+          </td>
+        </tr>
+      )}
+    </tbody>
 
-
-              <td>{(p.probabilidad * 100).toFixed(1)}%</td>
-
-              <td>{p.modelo_version}</td>              
-            </tr>
-          ))}
-        </tbody>
       </table>
     </section>
     <section className="graficos-flex">
