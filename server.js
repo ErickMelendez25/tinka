@@ -662,11 +662,17 @@ app.get('/api/frecuencias', (req, res) => {
     res.json(results);
   });
 });
-
-// 📈 Obtener las predicciones recientes
 app.get('/api/predicciones', (req, res) => {
   const sql = `
-    SELECT id, numeros_predichos, fecha_prediccion
+    SELECT 
+      id,
+      fecha_generada,
+      probabilidad,
+      bola1, bola2, bola3, bola4, bola5, bola6,
+      boliyapa,
+      modelo_version,
+      pares,
+      trios
     FROM predicciones
     ORDER BY id DESC
     LIMIT 10
