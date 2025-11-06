@@ -340,7 +340,12 @@ const ejecutarModelo = async () => {
         <h3>🌀 Superposición y Colapso Cuántico (Visual)</h3>
         <PieChart width={400} height={300}>
           <Pie
-            data={frecuencias.slice(0, 6).map((f, i) => ({ name: `#${f.numero}`, value: f.veces_salida }))}
+            data={Array.isArray(frecuencias)
+              ? frecuencias.slice(0, 6).map((f, i) => ({
+                  name: f?.numero ? `#${f.numero}` : `#${i + 1}`,
+                  value: f?.veces_salida || 0
+                }))
+              : []}
             cx="50%"
             cy="50%"
             labelLine={false}
@@ -349,12 +354,15 @@ const ejecutarModelo = async () => {
             fill="#8884d8"
             dataKey="value"
           >
-            {frecuencias.slice(0, 6).map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={colores[index % colores.length]} />
-            ))}
+            {Array.isArray(frecuencias)
+              ? frecuencias.slice(0, 6).map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colores[index % colores.length]} />
+                ))
+              : null}
           </Pie>
           <Tooltip />
         </PieChart>
+
         <p className="nota">* Esto simula la idea de que los números pueden estar en "superposición" y luego se "colapsan" a uno al ser elegidos.</p>
       </div>
     </section>
