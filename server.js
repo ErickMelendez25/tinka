@@ -632,51 +632,55 @@
 
     /// ===============================
   // ✅ Endpoint: Obtener frecuencias
-  // ===============================
-  app.get('/api/frecuencias', async (req, res) => {
-    try {
-      // Ejecutar consulta usando mysql2/promise
-      const [frecuencias] = await db.query(`
-        SELECT numero, COUNT(*) AS veces_salida
-        FROM (
-          SELECT bola1 AS numero FROM sorteos
-          UNION ALL
-          SELECT bola2 FROM sorteos
-          UNION ALL
-          SELECT bola3 FROM sorteos
-          UNION ALL
-          SELECT bola4 FROM sorteos
-          UNION ALL
-          SELECT bola5 FROM sorteos
-          UNION ALL
-          SELECT bola6 FROM sorteos
-        ) AS todas_bolas
-        GROUP BY numero
-        ORDER BY veces_salida DESC
-      `);
+  // 📊 Obtener frecuencias de aparición de cada número
+app.get('/api/frecuencias', (req, res) => {
+  const sql = `
+    SELECT numero, COUNT(*) AS veces_salida
+    FROM (
+      SELECT bola1 AS numero FROM sorteos
+      UNION ALL
+      SELECT bola2 FROM sorteos
+      UNION ALL
+      SELECT bola3 FROM sorteos
+      UNION ALL
+      SELECT bola4 FROM sorteos
+      UNION ALL
+      SELECT bola5 FROM sorteos
+      UNION ALL
+      SELECT bola6 FROM sorteos
+    ) AS todas_bolas
+    GROUP BY numero
+    ORDER BY veces_salida DESC
+  `;
 
-      // Enviar el resultado como JSON
-      res.json(frecuencias);
-    } catch (err) {
+  db.query(sql, (err, results) => {
+    if (err) {
       console.error('❌ Error al obtener frecuencias:', err);
-      res.status(500).json({ error: 'Error al obtener frecuencias' });
+      return res.status(500).json({ error: 'Error al obtener frecuencias' });
     }
+
+    res.json(results);
   });
+});
 
+// 📈 Obtener las predicciones recientes
+app.get('/api/predicciones', (req, res) => {
+  const sql = `
+    SELECT id, numeros_predichos, fecha_prediccion
+    FROM predicciones
+    ORDER BY id DESC
+    LIMIT 10
+  `;
 
-
-  // Obtener predicciones recientes
-  app.get('/api/predicciones', async (req, res) => {
-    try {
-      const predicciones = await db.query(
-        'SELECT * FROM predicciones ORDER BY id DESC LIMIT 10'
-      );
-      res.json(predicciones);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Error al obtener predicciones' });
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('❌ Error al obtener predicciones:', err);
+      return res.status(500).json({ error: 'Error al obtener predicciones' });
     }
+
+    res.json(results);
   });
+});
 
 
 
@@ -741,14 +745,6 @@
     res.json({ message: 'Sorteo actualizado correctamente' });
   });
 });
-
-  app.get('/api/predicciones', (req, res) => {
-    const limit = parseInt(req.query.limit) || 15;
-    db.query('SELECT * FROM predicciones ORDER BY id DESC LIMIT ?', [limit], (err, resultados) => {
-      if (err) return res.status(500).json({ error: 'Error al consultar predicciones' });
-      res.json(resultados);
-    });
-  });
 
 
 
