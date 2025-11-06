@@ -73,9 +73,37 @@ const [nuevaBola, setNuevaBola] = useState({
   
 
   useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        // Llamamos a ambos endpoints en paralelo
+        const [frecRes, predRes] = await Promise.all([
+          fetch(`${API}/frecuencias`),
+          fetch(`${API}/predicciones`)
+        ]);
 
-    fetch(`${API}/frecuencias`).then(res => res.json()).then(setFrecuencias);
-    fetch(`${API}/predicciones`).then(res => res.json()).then(setPredicciones);
+        // Convertimos a JSON
+        const frecData = await frecRes.json();
+        const predData = await predRes.json();
+
+        // Verificamos que sean arrays antes de asignar
+        if (Array.isArray(frecData)) {
+          setFrecuencias(frecData);
+        } else {
+          console.warn("⚠️ /frecuencias no devolvió un array:", frecData);
+        }
+
+        if (Array.isArray(predData)) {
+          setPredicciones(predData);
+        } else {
+          console.warn("⚠️ /predicciones no devolvió un array:", predData);
+        }
+
+      } catch (err) {
+        console.error("❌ Error cargando datos:", err);
+      }
+    };
+
+    cargarDatos();
   }, []);
 
   const handleChange = e => {

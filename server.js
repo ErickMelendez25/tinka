@@ -630,12 +630,49 @@
   });
 
 
-  app.get('/api/frecuencias', (req, res) => {
-    db.query('SELECT numero, veces_salida FROM frecuencias ORDER BY numero ASC', (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Error al cargar frecuencias' });
-      res.json(rows);
-    });
+  // Obtener frecuencias
+  app.get('/api/frecuencias', async (req, res) => {
+    try {
+      const frecuencias = await db.query(`
+        SELECT numero, COUNT(*) AS veces_salida
+        FROM (
+          SELECT bola1 AS numero FROM sorteos
+          UNION ALL
+          SELECT bola2 FROM sorteos
+          UNION ALL
+          SELECT bola3 FROM sorteos
+          UNION ALL
+          SELECT bola4 FROM sorteos
+          UNION ALL
+          SELECT bola5 FROM sorteos
+          UNION ALL
+          SELECT bola6 FROM sorteos
+        ) AS todas_bolas
+        GROUP BY numero
+        ORDER BY veces_salida DESC
+      `);
+
+      res.json(frecuencias);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Error al obtener frecuencias' });
+    }
   });
+
+
+  // Obtener predicciones recientes
+  app.get('/api/predicciones', async (req, res) => {
+    try {
+      const predicciones = await db.query(
+        'SELECT * FROM predicciones ORDER BY id DESC LIMIT 10'
+      );
+      res.json(predicciones);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Error al obtener predicciones' });
+    }
+  });
+
 
 
   app.post('/api/sorteos', (req, res) => {
