@@ -630,10 +630,13 @@
   });
 
 
-  // Obtener frecuencias
+    /// ===============================
+  // ✅ Endpoint: Obtener frecuencias
+  // ===============================
   app.get('/api/frecuencias', async (req, res) => {
     try {
-      const frecuencias = await db.query(`
+      // Ejecutar consulta usando mysql2/promise
+      const [frecuencias] = await db.query(`
         SELECT numero, COUNT(*) AS veces_salida
         FROM (
           SELECT bola1 AS numero FROM sorteos
@@ -652,12 +655,14 @@
         ORDER BY veces_salida DESC
       `);
 
+      // Enviar el resultado como JSON
       res.json(frecuencias);
     } catch (err) {
-      console.error(err);
+      console.error('❌ Error al obtener frecuencias:', err);
       res.status(500).json({ error: 'Error al obtener frecuencias' });
     }
   });
+
 
 
   // Obtener predicciones recientes
