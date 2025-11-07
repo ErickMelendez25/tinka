@@ -1,414 +1,178 @@
-// 1. Agrega un nuevo endpoint en tu backend (por ejemplo en Express):
-// GET /api/predicciones -> para obtener las combinaciones sugeridas más recientes
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import "./tinka.css";
 
-// --- En tu backend Node (ejemplo): ---
-// app.get('/api/predicciones', async (req, res) => {
-//   const predicciones = await db.query('SELECT * FROM predicciones ORDER BY id DESC LIMIT 10');
-//   res.json(predicciones);
-// });
-
-// 2. Ahora agrega esta sección en tu componente React para mostrar combinaciones sugeridas y superposición:
-
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
-import './TinkaDashboard.css';
-
-const API = 'https://tinka-production.up.railway.app/api';        // API de tu backend Node.js
-const API_TINKA = 'https://microservicioqiskit-production.up.railway.app/api';      // API del modelo cuántico (FastAPI)
-
-
-
-//const //API// = 'http://localhost:5000/api';        // API de tu backend Node.js
-
-//const //API_TINKA// = 'http://127.0.0.1:8000/api';      /// API del modelo cuántico (FastAPI
-
+const COLORS = ["#00C49F", "#FF8042", "#FFBB28", "#0088FE", "#FF4444", "#AA00FF"];
 
 const TinkaDashboard = () => {
-const [nuevaBola, setNuevaBola] = useState({
-    fecha: '',
-    sorteo: '',
-    bola1: '',
-    bola2: '',
-    bola3: '',
-    bola4: '',
-    bola5: '',
-    bola6: '',
-    boliyapa: '',
-    adicional1: '',
-    adicional2: '',
-    adicional3: '',
-    adicional4: '',
-    adicional5: '',
-    adicional6: '',
-    sorteo_extra: false
-  });
-
-  const [frecuencias, setFrecuencias] = useState([]);
   const [sorteos, setSorteos] = useState([]);
   const [predicciones, setPredicciones] = useState([]);
-
-  
-  const [paginaActual, setPaginaActual] = useState(1);
-  const [totalPaginas, setTotalPaginas] = useState(1);
-  const sorteosPorPagina = 15;
-  const [cargandoModelo, setCargandoModelo] = useState(false);
-
-
-  const cargarSorteosPaginados = async (pagina) => {
-  try {
-      const res = await fetch(`${API}/sorteos?page=${pagina}&limit=${sorteosPorPagina}`);
-      const data = await res.json();
-      setSorteos(data.data);
-      setTotalPaginas(data.totalPages);
-    } catch (error) {
-      console.error('Error al cargar sorteos paginados:', error);
-    }
-  };
+  const [frecuencias, setFrecuencias] = useState([]);
+  const [repetidos, setRepetidos] = useState([]);
 
   useEffect(() => {
-    cargarSorteosPaginados(paginaActual);
-  }, [paginaActual]);
+    const obtenerDatos = async () => {
+      try {
+        const baseURL = "https://tinka.grupo-digital-nextri.com/api";
+        const [resSorteos, resPredicciones, resFrecuencias, resRepetidos] = await Promise.all([
+          axios.get(`${baseURL}/sorteos`),
+          axios.get(`${baseURL}/predicciones`),
+          axios.get(`${baseURL}/frecuencias`),
+          axios.get(`${baseURL}/repetidos`),
+        ]);
 
+        setSorteos(resSorteos.data || []);
+        setPredicciones(resPredicciones.data || []);
+        setFrecuencias(resFrecuencias.data || []);
+        setRepetidos(resRepetidos.data || []);
+      } catch (error) {
+        console.error("❌ Error cargando datos:", error);
+      }
+    };
 
-  
+    obtenerDatos();
+  }, []);
 
- useEffect(() => {
-  const cargarDatos = async () => {
-    try {
-      const [frecRes, predRes] = await Promise.all([
-        fetch(`${API}/frecuencias`),
-        fetch(`${API}/predicciones`)
-      ]);
-
-      const frecData = await frecRes.json();
-      const predData = await predRes.json();
-
-      setFrecuencias(Array.isArray(frecData) ? frecData : []);
-      setPredicciones(Array.isArray(predData) ? predData : []);
-
-    } catch (err) {
-      console.error("❌ Error cargando datos:", err);
-      setFrecuencias([]);
-      setPredicciones([]);
-    }
-  };
-
-  cargarDatos();
-}, []);
-
-
-  const handleChange = e => {
-    const { name, value } = e.target;
-    setNuevaBola(prev => ({ ...prev, [name]: value }));
-  };
-
-const guardarSorteo = async () => {
-  const check = await fetch(`${API}/sorteos`); // Trae todos los sorteos
-  const existentes = await check.json();
-  const existe = existentes.some(s => new Date(s.fecha).toISOString().slice(0, 10) === nuevaBola.fecha);
-
-  if (existe) {
-    const confirmar = window.confirm('Ya existe un sorteo con esa fecha. ¿Deseas reemplazarlo?');
-    if (!confirmar) return;
-
-    // PUT
-    const res = await fetch(`${API}/sorteos`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(nuevaBola)
-    });
-    if (res.ok) {
-      alert('Sorteo actualizado');
-      window.location.reload();
-    } else {
-      alert('Error actualizando sorteo');
-    }
-  } else {
-    // POST
-    const res = await fetch(`${API}/sorteos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(nuevaBola)
-    });
-    if (res.ok) {
-      alert('Sorteo registrado');
-      window.location.reload();
-    } else {
-      alert('Error guardando sorteo');
-    }
-  }
-};
-
-
-const ejecutarModelo = async () => {
-  try {
-    setCargandoModelo(true);
-
-    const res = await fetch(`${API_TINKA}/ejecutarmodelos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ejecutar: true })
-    });
-
-    const data = await res.json();
-
-    if (data.error) {
-      console.error('⚠️ Error desde el backend:', data.error);
-      alert('❌ Error al ejecutar el modelo: ' + data.error);
-      return;
-    }
-
-    console.log('[DEBUG] Respuesta del modelo:', data);
-    alert(data.detalle || data.status || '✅ Modelo ejecutado correctamente');
-
-    if (data.predicciones) {
-      setPredicciones(data.predicciones);
-    } else {
-      setTimeout(() => obtenerPredicciones(), 2000);
-    }
-
-  } catch (error) {
-    console.error('❌ Error general al ejecutar el modelo:', error);
-    alert('❌ Error inesperado al ejecutar el modelo');
-  } finally {
-    setCargandoModelo(false);
-  }
-};
-
-
-
-
-
-  const obtenerPredicciones = async () => {
-    const res = await fetch(`${API}/predicciones?limit=15`);
-    const data = await res.json();
-
-      // Ordenar por probabilidad descendente
-    const ordenadas = Array.isArray(data)
-      ? data.sort((a, b) => (b.probabilidad || 0) - (a.probabilidad || 0))
-      : [];
-
-    setPredicciones(ordenadas);
-
-  };
-
-
-
-
-
-  const colores = ['#6366f1', '#a855f7', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+  // 🔹 Preparar datos para el gráfico
+  const datosFrecuencia = (frecuencias || [])
+    .filter(f => f && f.numero != null)
+    .map((f, i) => ({
+      name: f?.numero ? `#${f.numero}` : `#${i + 1}`,
+      value: f?.veces_salida || 0,
+    }));
 
   return (
-    <div className="dashboard">
-      <h2 className="title">📊 Registro y Predicción de Resultados de La Tinka</h2>
+    <div className="dashboard-container">
+      <h1>📊 Panel de Análisis de Tinka</h1>
 
-      <section className="formulario">
-        <h3>Registrar nuevo sorteo</h3>
-        <div className="inputs">
-        <input type="date" name="fecha" value={nuevaBola.fecha} onChange={handleChange} />
-        <input name="sorteo" placeholder="N° sorteo" value={nuevaBola.sorteo} onChange={handleChange} type="number" />
-
-        {[1, 2, 3, 4, 5, 6].map(i => (
-          <input key={i} name={`bola${i}`} placeholder={`Bola ${i}`} value={nuevaBola[`bola${i}`]} onChange={handleChange} type="number" min="1" max="50" />
-        ))}
-
-        <input name="boliyapa" placeholder="BoliYapa" value={nuevaBola.boliyapa} onChange={handleChange} type="number" min="1" max="50" />
-
-        <h4>Adicionales:</h4>
-        {[1, 2, 3, 4, 5, 6].map(i => (
-          <input key={i} name={`adicional${i}`} placeholder={`Adicional ${i}`} value={nuevaBola[`adicional${i}`]} onChange={handleChange} type="number" min="1" max="50" />
-        ))}
-
-        <div>
-          <label>
-            <input
-              type="checkbox"
-              name="sorteo_extra"
-              checked={nuevaBola.sorteo_extra}
-              onChange={e => setNuevaBola(prev => ({ ...prev, sorteo_extra: e.target.checked }))}
-            />
-            Sorteo Extra
-          </label>
-        </div>
-        </div>
-        <button onClick={guardarSorteo} className="btn-guardar">Guardar Sorteo</button>
-      </section>
-
-      <section className="grafico">
-        <h3>🎯 Frecuencia de Números</h3>
-          <div style={{ width: '100%', overflowX: 'auto' }}>
-            <BarChart width={800} height={300} data={frecuencias}>
+      {/* ============================ FRECUENCIAS ============================ */}
+      <section>
+        <h2>📈 Frecuencia de Números</h2>
+        {datosFrecuencia.length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={datosFrecuencia}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="numero" />
+              <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="veces_salida" fill="#4f46e5" radius={[5, 5, 0, 0]} />
+              <Legend />
+              <Bar dataKey="value" fill="#8884d8" />
             </BarChart>
-          </div>
-
-      </section>
-
-      <section className="tabla">
-        <h3>📅 Histórico de Sorteos</h3>
-        <table>
-        <thead>
-          <tr>
-            <th>Sorteo</th>
-            <th>Fecha</th>
-            <th>Bolas</th>
-            <th>BoliYapa</th>
-            <th>Adicionales</th>
-            <th>Sorteo Extra</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorteos.map(s => (
-            <tr key={s.id}>
-              <td>{s.sorteo}</td>
-              <td>{new Date(s.fecha).toLocaleDateString()}</td>
-              <td>
-                {[s.bola1, s.bola2, s.bola3, s.bola4, s.bola5, s.bola6].map((n, i) => (
-                  <span key={i} className="bolita">{n}</span>
-                ))}
-              </td>
-              <td>{s.boliyapa && <span className="bolita boliyapa">{s.boliyapa}</span>}</td>
-              <td>
-                {[s.adicional1, s.adicional2, s.adicional3, s.adicional4, s.adicional5, s.adicional6]
-                  .filter(n => n !== null)
-                  .map((n, i) => (
-                    <span key={i} className="bolita adicional">{n}</span>
-                ))}
-              </td>
-              <td>{s.sorteo_extra ? '✅' : '❌'}</td>
-            </tr>
-          ))}
-        </tbody>
-        </table>
-        <div className="paginacion">
-        <button
-          onClick={() => setPaginaActual(prev => Math.max(prev - 1, 1))}
-          disabled={paginaActual === 1}
-        >
-          ⬅ Anterior
-        </button>
-        <span>Página {paginaActual} de {totalPaginas}</span>
-        <button
-          onClick={() => setPaginaActual(prev => Math.min(prev + 1, totalPaginas))}
-          disabled={paginaActual === totalPaginas}
-        >
-          Siguiente ➡
-        </button>
-      </div>
-
-      </section>
-
-
-      <section className="prediccion">
-        <h3>🔮 Predicción Cuántica</h3>
-        {cargandoModelo ? (
-          <div className="spinner">
-            <img src="https://i.gifer.com/ZKZg.gif" alt="Cargando modelo..." />
-            <p>Ejecutando modelo cuántico...</p>
-          </div>
+          </ResponsiveContainer>
         ) : (
-          <button onClick={ejecutarModelo} className="btn-ejecutar">
-            Ejecutar modelo
-          </button>
+          <p>⚠️ No hay datos de frecuencia disponibles.</p>
         )}
       </section>
 
-      <section className="tabla">
-  <h3>✨ Combinaciones Sugeridas</h3>
-  <table>
-    <thead>
-      <tr>
-        <th style={{ width: '300px' }}>Bolas</th>
-        <th style={{ width: '60px' }}>BoliYapa</th>
-
-        <th style={{ width: '60px' }}>Probabilidad</th>
-
-        <th style={{ width: '180px' }}>Modelo</th>
-
-      </tr>
-    </thead>
-    <tbody>
-      {Array.isArray(predicciones) && predicciones.length > 0 ? (
-        predicciones.map((p, i) => (
-          <tr key={p.id || i}>
-            <td>
-              {[p.bola1, p.bola2, p.bola3, p.bola4, p.bola5, p.bola6]
-                .filter(n => n !== null && n !== undefined)
-                .map((n, j) => (
-                  <span key={j} className="bolita">{Number(n)}</span>
+      {/* ============================ REPETIDOS ============================ */}
+      <section>
+        <h2>🔁 Números Más Repetidos</h2>
+        {(repetidos || []).length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={(repetidos || [])
+                  .filter(r => r && r.numero != null)
+                  .map((r, i) => ({
+                    name: `#${r.numero}`,
+                    value: r?.veces_repetido || 0,
+                  }))}
+                cx="50%"
+                cy="50%"
+                label={({ name, value }) => `${name || "—"}: ${value ?? 0}`}
+                outerRadius={120}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {(repetidos || []).map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
-            </td>
-            <td>
-              {p.boliyapa
-                ? <span className="bolita boliyapa">{Number(p.boliyapa)}</span>
-                : '-'}
-            </td>
-            <td>
-              {typeof p.probabilidad === 'number'
-                ? `${(p.probabilidad * 100).toFixed(1)}%`
-                : '—'}
-            </td>
-            <td>{p.modelo_version || 'Desconocido'}</td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan="4" style={{ textAlign: 'center', color: '#666' }}>
-            ⚠️ No hay predicciones disponibles.
-          </td>
-        </tr>
-      )}
-    </tbody>
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        ) : (
+          <p>⚠️ No hay números repetidos disponibles.</p>
+        )}
+      </section>
 
-      </table>
-    </section>
-    <section className="graficos-flex">
-      <div className="grafico">
-        <h3>🌌 Visualización Cuántica: Superposición y Colapso</h3>
-        <img src="https://microservicioqiskit-production.up.railway.app/static/superposicion_colapso.png" alt="Colapso Cuántico" style={{ maxWidth: '100%', borderRadius: '8px' }} />
-        <p className="nota">* Simulación visual del principio de superposición colapsando a un resultado clásico.</p>
-      </div>
+      {/* ============================ SORTEOS ============================ */}
+      <section>
+        <h2>🎰 Últimos Sorteos</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Fecha</th>
+              <th>Números</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.isArray(sorteos) && sorteos.filter(Boolean).length > 0 ? (
+              sorteos.filter(Boolean).map((s, idx) => (
+                <tr key={s?.id || idx}>
+                  <td>{s?.sorteo || "—"}</td>
+                  <td>{s?.fecha ? new Date(s.fecha).toLocaleDateString() : "—"}</td>
+                  <td>
+                    {[s?.bola1, s?.bola2, s?.bola3, s?.bola4, s?.bola5, s?.bola6]
+                      .filter(Boolean)
+                      .map((n, i) => (
+                        <span key={i} className="bolita">{n}</span>
+                      ))}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan="3">⚠️ No hay sorteos disponibles</td></tr>
+            )}
+          </tbody>
+        </table>
+      </section>
 
-      <div className="grafico">
-        <h3>🌀 Superposición y Colapso Cuántico (Visual)</h3>
-        <PieChart width={400} height={300}>
-          <Pie
-            data={Array.isArray(frecuencias)
-              ? frecuencias.slice(0, 6).map((f, i) => ({
-                  name: f?.numero ? `#${f.numero}` : `#${i + 1}`,
-                  value: f?.veces_salida || 0
-                }))
-              : []}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={({ name, value }) => `${name}: ${value}`}
-            outerRadius={100}
-            fill="#8884d8"
-            dataKey="value"
-          >
-            {Array.isArray(frecuencias)
-              ? frecuencias.slice(0, 6).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={colores[index % colores.length]} />
-                ))
-              : null}
-          </Pie>
-          <Tooltip />
-        </PieChart>
-
-        <p className="nota">* Esto simula la idea de que los números pueden estar en "superposición" y luego se "colapsan" a uno al ser elegidos.</p>
-      </div>
-    </section>
-
-
-
-
+      {/* ============================ PREDICCIONES ============================ */}
+      <section>
+        <h2>🧠 Predicciones AI</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Números Predichos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.isArray(predicciones) && predicciones.filter(Boolean).length > 0 ? (
+              predicciones.filter(Boolean).map((p, i) => (
+                <tr key={p?.id || i}>
+                  <td>{p?.id || i + 1}</td>
+                  <td>
+                    {[p?.bola1, p?.bola2, p?.bola3, p?.bola4, p?.bola5, p?.bola6]
+                      .filter(Boolean)
+                      .map((n, idx) => (
+                        <span key={idx} className="bolita">{n}</span>
+                      ))}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan="2">⚠️ No hay predicciones disponibles</td></tr>
+            )}
+          </tbody>
+        </table>
+      </section>
     </div>
-
   );
 };
 
