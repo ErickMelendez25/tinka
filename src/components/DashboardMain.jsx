@@ -112,6 +112,7 @@ const TinkaDashboard = () => {
   const ejecutarModelo = async () => {
     try {
       setCargandoModelo(true);
+
       const res = await fetch(`${API_TINKA}/ejecutarmodelos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,8 +126,12 @@ const TinkaDashboard = () => {
       }
 
       alert(data.detalle || data.status || '✅ Modelo ejecutado correctamente');
-      if (Array.isArray(data.predicciones)) setPredicciones(data.predicciones.filter(Boolean));
-      else setTimeout(obtenerPredicciones, 2000);
+
+      // 🔁 Esperamos un poco y recargamos las nuevas combinaciones desde el backend principal
+      setTimeout(async () => {
+        await obtenerPredicciones();
+      }, 2500);
+
     } catch (error) {
       console.error('❌ Error general al ejecutar el modelo:', error);
       alert('❌ Error inesperado al ejecutar el modelo');
@@ -135,9 +140,11 @@ const TinkaDashboard = () => {
     }
   };
 
+
   // ✅ Obtener predicciones
   const obtenerPredicciones = async () => {
     try {
+      setPredicciones([]); // limpia temporalmente
       const res = await fetch(`${API}/predicciones?limit=15`);
       const data = await res.json();
       const ordenadas = Array.isArray(data)
@@ -148,6 +155,7 @@ const TinkaDashboard = () => {
       console.error("❌ Error obteniendo predicciones:", err);
     }
   };
+
 
   const colores = ['#6366f1', '#a855f7', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
 
