@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cel
 import './TinkaDashboard.css';
 
 const API = 'https://tinka-production.up.railway.app/api';
-const API_TINKA = 'https://microservicioqiskit-production.up.railway.app/api';
+const API_TINKA = 'https://microserviciotinka-production.up.railway.app/api';
 
 const TinkaDashboard = () => {
   const [nuevaBola, setNuevaBola] = useState({
