@@ -108,10 +108,12 @@ const TinkaDashboard = () => {
     }
   };
 
-  // ✅ Ejecutar modelo cuántico
   const ejecutarModelo = async () => {
     try {
       setCargandoModelo(true);
+
+      // 💡 Muestra mensaje inmediato al usuario
+      alert("🧠 El modelo se está ejecutando en segundo plano. Revisa las nuevas predicciones en unos segundos.");
 
       const res = await fetch(`${API_TINKA}/ejecutarmodelos`, {
         method: 'POST',
@@ -125,7 +127,8 @@ const TinkaDashboard = () => {
         return;
       }
 
-      alert(data.detalle || data.status || '✅ Modelo ejecutado correctamente');
+      // ✅ Al terminar correctamente
+      alert(data.detalle || '✅ Modelo ejecutado correctamente');
 
       // 🔁 Esperamos un poco y recargamos las nuevas combinaciones desde el backend principal
       setTimeout(async () => {
@@ -139,6 +142,7 @@ const TinkaDashboard = () => {
       setCargandoModelo(false);
     }
   };
+
 
 
   // ✅ Obtener predicciones
