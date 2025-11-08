@@ -32,7 +32,7 @@ const Login = () => {
     try {
       // Verifica si estás en producción (Railway) o en desarrollo (localhost)
       const apiUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://tinka.grupo-digital-nextri.com/login' 
+      ? 'https://tinka-production.up.railway.app/login' 
       : 'http://localhost:5000/login';
 
       console.log("API URL:", apiUrl);  // Verifica si la URL es correcta
@@ -73,7 +73,7 @@ const Login = () => {
   
       // URL directa al endpoint sin "/api"
       const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://tinka.grupo-digital-nextri.com'
+        ? 'https://tinka-production.up.railway.app'
         : 'http://localhost:5000';
   
       // Enviar datos al backend
